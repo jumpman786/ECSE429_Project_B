@@ -1,0 +1,15 @@
+{
+  "name": "ecse429_project_b",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Acceptance tests (Cucumber) for Todo Manager REST API",
+  "scripts": {
+    "test": "npm run cucumber",
+    "cucumber": "cucumber-js ./features -r ./steps --order random:765432"
+  },
+  "devDependencies": {
+    "@cucumber/cucumber": "^10.0.2",
+    "chai": "^4.3.10",
+    "chai-http": "^4.4.0"
+  }
+}
