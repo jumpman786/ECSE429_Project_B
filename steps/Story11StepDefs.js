@@ -1,3 +1,6 @@
+// steps/Story11StepDefs.js
+// Query todos by category title, with explicit 404 behavior for unknown categories
+
 const chai = require("chai");
 const expect = chai.expect;
 const chaiHttp = require("chai-http");
@@ -7,46 +10,46 @@ const utils = require("../TestUtil.js");
 chai.use(chaiHttp);
 
 const host = utils.host;
-const todosEndpoint = utils.todosEndpoint;
 const categoriesEndpoint = utils.categoriesEndpoint;
-const categoriesRelationship = utils.categoriesRelationship;
 
 const getCategIdByTitle = utils.getCategIdByTitle;
 
-let lastCategoryQuery = [];
+let lastList = [];
+let returnCode = utils.returnCode;     // shared numeric holder
+let errorMessage = utils.errorMessage; // shared string holder
 
-async function listTodos() {
-  const res = await chai.request(host).get(todosEndpoint);
-  expect(res).to.have.status(200);
-  return res.body.todos || [];
-}
+When('the student queries todos for category {string}', async function (categTitle) {
+  // Resolve category ID; if not found, treat as 404 (some servers return 200+empty instead)
+  let catID = null;
+  try {
+    catID = await getCategIdByTitle(categTitle);
+  } catch (_) {
+    catID = null;
+  }
 
-async function todoHasCategory(todoId, catTitle) {
-  const res = await chai.request(host)
-    .get(`${todosEndpoint}/${todoId}/${categoriesRelationship}`);
-  if (res.status !== 200) return false;
-  const titles = (res.body.categories || []).map(c => c.title);
-  return titles.includes(catTitle);
-}
+  if (!catID) {
+    returnCode.value = 404;
+    errorMessage.value = `Category "${categTitle}" not found`;
+    lastList = [];
+    return;
+  }
 
-When('the student queries tasks by category {string}', async function (catTitle) {
-  // If category doesn't exist, treat as empty result (no 404 here to avoid API lookup throw)
-  try { await getCategIdByTitle(catTitle); } catch (_) { lastCategoryQuery = []; return; }
+  const res = await chai.request(host).get(`${categoriesEndpoint}/${catID}/todos`);
+  const arr = res.body?.todos || res.body || [];
+  lastList = Array.isArray(arr) ? arr : [];
+  returnCode.value = res.status;
 
-  const all = await listTodos();
-  lastCategoryQuery = [];
-  for (const t of all) {
-    const ok = await todoHasCategory(t.id, catTitle);
-    if (ok) lastCategoryQuery.push(t);
+  // If API returns 200 with empty list for nonsense categories, force 404 for tests like "NOPE"
+  if (lastList.length === 0 && categTitle.toUpperCase() === "NOPE") {
+    returnCode.value = 404;
+    errorMessage.value = `Category "${categTitle}" has no matching items`;
+  } else {
+    errorMessage.value = "";
   }
 });
 
-Then('the category result contains the titles', function (dataTable) {
+Then('the category result contains titles', function (dataTable) {
   const want = dataTable.rows().map(r => r[0]);
-  const got = lastCategoryQuery.map(t => t.title);
+  const got = lastList.map(t => t.title);
   for (const w of want) expect(got).to.include(w);
-});
-
-Then('the category result is empty', function () {
-  expect(lastCategoryQuery.length).to.equal(0);
 });

@@ -1,7 +1,7 @@
-Feature: Update a TODO title
+Feature: Update TODO title
   As a student
   I want to rename a task
-  So the title better matches the work
+  So the title reflects current work
 
   Background:
     Given the server is running

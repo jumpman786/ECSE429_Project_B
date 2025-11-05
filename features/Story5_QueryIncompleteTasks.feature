@@ -1,19 +1,19 @@
 Feature: Query incomplete tasks for a course
   As a student
-  I want to see the incomplete tasks for a course
-  So I know what remains
+  I want to see which tasks are unfinished in a course
+  So I can plan my work
 
   Background:
     Given the server is running
     And TODOs with the following details exist
-      | title           | doneStatus | description |
-      | HW1             | false      | problems    |
-      | HW2             | true       | submitted   |
-      | Project intro   | false      | draft       |
+      | title         | doneStatus | description |
+      | HW1           | false      | problems    |
+      | HW2           | true       | submitted   |
+      | Project intro | false      | draft       |
     And course todo list projects with the following details exist
-      | title    | completed | description | active |
-      | ECSE321  | false     | SE          | true   |
-      | ENGL202  | false     | Lit         | true   |
+      | title   | completed | description | active |
+      | ECSE321 | false     | SE          | true   |
+      | ENGL202 | false     | Lit         | true   |
     And the TODO "HW1" is attached to course "ECSE321"
     And the TODO "HW2" is attached to course "ECSE321"
     And the TODO "Project intro" is attached to course "ECSE321"
@@ -22,7 +22,7 @@ Feature: Query incomplete tasks for a course
     When the student queries incomplete tasks for "ECSE321"
     Then the result contains only tasks with doneStatus "false"
     And the result contains the titles
-      | HW1 |
+      | HW1           |
       | Project intro |
 
   Scenario: Alternate - course has no tasks
