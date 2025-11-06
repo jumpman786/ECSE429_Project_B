@@ -25,13 +25,13 @@ The table below answers the three required questions for each story:
 | 6 | Edit TODO Description | Yes | Yes | Yes | Yes | No functional issues; invalid payload correctly returns error code. |
 | 7 | Remove a Task from course list | Yes | Yes | Yes | Yes | No issues in normal and error flows. |
 | 8 | Bulk Priority Tagging for a Course | Yes | Yes | Yes | Yes | Works as intended; no major bugs found. |
-| 9 | Delete Todo | Yes | No | Yes | Yes | Works as intended; no major bugs found. |
-| 10 | Toggle Project Active | Yes | No | No | Yes | Works as intended; no major bugs found. |
+| 9 | Delete Todo | Yes | Yes | Yes | Yes | Works as intended; no major bugs found. |
+| 10 | Toggle Project Active | Yes | Yes | Yes | Yes | Works as intended; no major bugs found. |
 | 11 |  | Yes | Yes | Yes | Yes | Works as intended; no major bugs found. |
-| 12 | Unassign Category from ToDo | Yes | Yes | No | Yes | Works as intended; no major bugs found. |
-| 13 | Bulk Unlink All Tasks from Course | Yes | No | No | Yes | Works as intended; no major bugs found. |
-| 14 | Update Todo Title | Yes | No | No | Yes | Works as intended; no major bugs found. |
-| 15 | Get Todo from ID | Yes | No | Yes | Yes | Works as intended; no major bugs found. |
+| 12 | Unassign Category from ToDo | Yes | Yes | Yes | Yes | Works as intended; no major bugs found. |
+| 13 | Bulk Unlink All Tasks from Course | Yes | Yes | Yes | Yes | Works as intended; no major bugs found. |
+| 14 | Update Todo Title | Yes | Yes | Yes | Yes | Works as intended; no major bugs found. |
+| 15 | Get Todo from ID | Yes | Yes | Yes | Yes | Works as intended; no major bugs found. |
 
 **Automation and Step Definition Structure**
 
