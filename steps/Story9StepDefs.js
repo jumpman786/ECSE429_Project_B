@@ -1,3 +1,4 @@
+// steps/Story9StepDefs.js
 const chai = require("chai");
 const expect = chai.expect;
 const chaiHttp = require("chai-http");
@@ -14,39 +15,70 @@ const projectTasksRelationship = utils.projectTasksRelationship;
 const getTODOIdByTitle = utils.getTODOIdByTitle;
 const getProjIdByCourseName = utils.getProjIdByCourseName;
 
-let returnCode = utils.returnCode; // shared
+let response;
+let returnCode = utils.returnCode;
 let errorMessage = utils.errorMessage;
 
-let lastDeleted = { id: null, title: null };
+// keep the id of the last deleted todo so we can assert by ID (titles may be duplicated on the server)
+let lastDeletedId = null;
+let lastDeletedTitle = null;
 
-When('the student deletes TODO {string}', async function (title) {
-  const id = await getTODOIdByTitle(title);
-  const res = await chai.request(host).delete(`${todosEndpoint}/${id}`);
-  returnCode.value = res.status;
-  errorMessage.value = res.body?.errorMessages?.[0] || res.body?.errorMessage || "";
-  lastDeleted = { id, title };
+When('the student deletes TODO {string}', async function (todoTitle) {
+  const todoID = await getTODOIdByTitle(todoTitle);
+
+  response = await chai.request(host).delete(`${todosEndpoint}/${todoID}`);
+  expect([200, 204]).to.include(response.status);
+
+  lastDeletedId = todoID;
+  lastDeletedTitle = todoTitle;
+
+  returnCode.value = response.status;
+  errorMessage.value =
+    response.body?.errorMessages?.[0] || response.body?.errorMessage || "";
 });
 
 When('the student deletes TODO id {string}', async function (id) {
-  const res = await chai.request(host).delete(`${todosEndpoint}/${id}`);
-  returnCode.value = res.status;
-  errorMessage.value = res.body?.errorMessages?.[0] || res.body?.errorMessage || "";
-  lastDeleted = { id, title: null };
+  // Do not assert success here — this scenario expects an error code.
+  try {
+    response = await chai.request(host).delete(`${todosEndpoint}/${id}`);
+    returnCode.value = response.status;
+    errorMessage.value =
+      response.body?.errorMessages?.[0] || response.body?.errorMessage || "";
+  } catch (e) {
+    // superagent throws on 4xx/5xx; normalize to 400/404 for CommonErrorSteps
+    returnCode.value = e.status ?? 404;
+    errorMessage.value = "";
+  }
 });
 
 Then('the TODO titled {string} is no longer present', async function (_title) {
-  // Verify by ID absence to handle duplicate titles in seed data.
-  expect(returnCode.value).to.be.oneOf([200, 202, 204]);
-  const res = await chai.request(host).get(`${todosEndpoint}/${lastDeleted.id}`);
-  // Some servers return 404/400; others 200 with a body missing.
-  expect(res.status).to.be.oneOf([400, 404]);
+  // Titles can be duplicated; verify by ID instead.
+  expect(lastDeletedId, "Internal: lastDeletedId not set").to.exist;
+
+  // Try to GET the specific ID — should be gone (404/400)
+  let got;
+  try {
+    got = await chai.request(host).get(`${todosEndpoint}/${lastDeletedId}`);
+  } catch (e) {
+    // expected for many builds
+    got = { status: e.status || 404 };
+  }
+  expect([400, 404]).to.include(got.status);
+
+  // Also verify the ID is not in the list anymore (if the list endpoint returns all)
+  const list = await chai.request(host).get(todosEndpoint);
+  expect(list).to.have.status(200);
+  const ids = (list.body.todos || []).map(t => t.id);
+  expect(ids).to.not.include(lastDeletedId);
 });
 
 Then('course {string} no longer lists {string} among its tasks', async function (course, _title) {
+  expect(lastDeletedId, "Internal: lastDeletedId not set").to.exist;
+
   const projID = await getProjIdByCourseName(course);
   const res = await chai.request(host).get(`${projectsEndpoint}/${projID}/${projectTasksRelationship}`);
   expect(res).to.have.status(200);
   const tasks = res.body.todos || res.body.tasks || [];
-  const ids = tasks.map(t => t.id);
-  expect(ids).to.not.include(lastDeleted.id);
+  const taskIds = tasks.map(t => t.id ?? t.todo?.id).filter(Boolean);
+  expect(taskIds).to.not.include(lastDeletedId);
 });

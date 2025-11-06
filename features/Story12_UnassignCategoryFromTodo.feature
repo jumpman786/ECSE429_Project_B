@@ -1,7 +1,7 @@
-Feature: Remove a category from a TODO
+Feature: Unassign category from a TODO
   As a student
-  I want to clear a priority tag from a task
-  So I can reclassify it later
+  I want to remove a priority from a task
+  So the tagging stays accurate
 
   Background:
     Given the server is running

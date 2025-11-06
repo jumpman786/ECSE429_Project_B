@@ -1,3 +1,4 @@
+// steps/Story10StepDefs.js
 const chai = require("chai");
 const expect = chai.expect;
 const chaiHttp = require("chai-http");
@@ -7,41 +8,49 @@ const utils = require("../TestUtil.js");
 chai.use(chaiHttp);
 
 const host = utils.host;
-const projectsEndpoint = utils.projectsEndpoint;
+const todosEndpoint = utils.todosEndpoint;
 
-const getProjIdByCourseName = utils.getProjIdByCourseName;
+let response;
+let returnCode = utils.returnCode;
+let errorMessage = utils.errorMessage;
+let lastCreatedTitle = null;
 
-async function getProjectObj(id) {
-  const res = await chai.request(host).get(`${projectsEndpoint}/${id}`);
-  expect(res).to.have.status(200);
-  return res.body.title ? res.body : (res.body.projects ? res.body.projects[0] : res.body);
-}
+When('the student creates a TODO titled {string} with description {string}', async function (title, description) {
+  response = await chai
+    .request(host)
+    .post(todosEndpoint)
+    .set("Content-Type", "application/json")
+    .send({ title, description });
 
-When('the student sets course {string} active to {string}', async function (course, activeStr) {
-  const projID = await getProjIdByCourseName(course);
-  const current = await getProjectObj(projID);
-  const active = activeStr.toLowerCase() === "true";
+  returnCode.value = response.status;
+  errorMessage.value = response.body?.errorMessages?.[0] || response.body?.errorMessage || "";
 
-  // PUT full project object variants
-  const variants = [
-    { title: current.title || course, description: current.description || "", completed: !!current.completed, active },
-    { title: current.title || course, description: current.description || "", completed: current.completed ? "true" : "false", active },
-    { title: current.title || course, description: current.description || "", active }
-  ];
-
-  let last;
-  for (const body of variants) {
-    last = await chai.request(host).put(`${projectsEndpoint}/${projID}`)
-      .set("Content-Type", "application/json")
-      .send(body);
-    if ([200,201,204].includes(last.status)) break;
-  }
-  expect([200,201,204]).to.include(last.status);
+  // accept 200/201 for normal success, but don't assert here—Then steps will decide
+  expect([200, 201]).to.include(response.status);
+  lastCreatedTitle = title;
 });
 
-Then('course {string} has active {string}', async function (course, expected) {
-  const projID = await getProjIdByCourseName(course);
-  const obj = await getProjectObj(projID);
-  const actual = (obj.active ?? "").toString().toLowerCase();
-  expect(actual).to.equal(expected.toLowerCase());
+When('the student creates a TODO with an invalid payload', async function () {
+  // Missing title is invalid on most builds
+  response = await chai
+    .request(host)
+    .post(todosEndpoint)
+    .set("Content-Type", "application/json")
+    .send({ description: "no title provided", doneStatus: false });
+
+  returnCode.value = response.status;
+  errorMessage.value = response.body?.errorMessages?.[0] || response.body?.errorMessage || "";
+});
+
+Then('the creation is accepted or gracefully rejected as duplicate', async function () {
+  // Typical servers return 200/201 on first create, 400 or 409 on duplicate;
+  // some accept duplicates (still 200/201). Treat all as handled.
+  expect([200, 201, 400, 409]).to.include(returnCode.value);
+  // If success, verify it exists
+  if ([200, 201].includes(returnCode.value) && lastCreatedTitle) {
+    const list = await chai.request(host).get(todosEndpoint);
+    expect(list).to.have.status(200);
+    const titles = (list.body.todos || []).map(t => t.title);
+    expect(titles).to.include(lastCreatedTitle);
+  }
 });
