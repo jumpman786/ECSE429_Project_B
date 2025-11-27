@@ -5,7 +5,10 @@
   "description": "Acceptance tests (Cucumber) for Todo Manager REST API",
   "scripts": {
     "test": "npm run cucumber",
-    "cucumber": "cucumber-js ./features -r ./steps --order random:765432"
+    "cucumber": "cucumber-js ./features -r ./steps --order random:765432",
+    "perf:todos": "node performance/perf_todos.js",
+    "perf:categories": "node performance/perf_categories.js",
+    "perf:projects": "node performance/perf_projects.js"
   },
   "devDependencies": {
     "@cucumber/cucumber": "^10.0.2",
